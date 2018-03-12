@@ -1,0 +1,34 @@
+.left-line{width: 258px;height: 100%;background: #fff;top: 0;left: -258px;z-index: 999;border-right: 1px solid #DCDCDC;display: none;}
+.left-line-top{width: 100%;height: 67px;background: #4EB4FF;line-height: 67px;padding: 0 16px;color: #fff;}
+.close-line-btn{width: 30px;height: 30px;background: url(../images/close-line.png) no-repeat center;margin-top: 18px;cursor: pointer;}
+.line-mesg-box{padding: 20px 0;overflow-x: auto;}
+.line-mesg-ul{width: 220px;border-radius: 5px;border: 1px solid #DCDCDC;margin: 0 auto;overflow: hidden;padding-bottom: 36px;}
+.line-mesg-ul li{overflow: hidden;font-size: 12px;margin-bottom: 8px;}
+.line-mesg-ul-top{line-height: 40px;height: 40px;border-bottom: 1px solid #DCDCDC;padding-left: 16px;}
+.delet-line{width: 38px;height: 38px;background: url(../images/lajitong.png) no-repeat center;cursor: pointer;}
+.line-mesg-ul .upload-img{padding: 0 23px;margin-bottom: 0;}
+.add-list{width: 172px;}
+.add-img-close{top: -8px;right: -8px;}
+.add-img-close>img{width: 16px;height: 16px;}
+
+.tuwen{min-width: 95px;}
+.line-box{width: 28px;height: 3px;float: left;margin-right: 8px;margin-top: 12px;}
+.tuwen>img{margin-right: 8px;}
+
+.save-line-box{height: 32px;}
+.save-line-btn{width: 82px;height: 32px;cursor: pointer;border-left: 1px dashed #DCDCDC;border-bottom: 1px dashed #DCDCDC;line-height: 32px;text-align: center;color: #4EB4FF;}
+
+.line-mesg-ul label{margin-left: 18px;line-height: 26px;}
+.requird-logo{color: red;margin-right: 5px;width: 6px;display: inline-block;}
+.left-line select{width: 172px;height: 26px;margin: 0 auto;display: block;outline: 0;border: 1px solid #e5e5e5;}
+.left-line input{width: 172px;height: 26px;margin: 0 auto;display: block;outline: 0;border: 1px solid #C9C9C9;padding: 0 8px;}
+
+
+.guide-line-use{width: 100%;height: 100%;position: absolute;top: 0;left: 0;z-index: 9999;}
+.guide-line-use-shadow{width: 100%;height: 100%;background-color: #333;filter:alpha(opacity=50);-moz-opacity:0.5;-khtml-opacity: 0.5;opacity: .5;}
+.guide-line-use-bg{width: 100%;height: 100%;position: absolute;top: 0;left: 0;background: url(../images/guide-bg.png) no-repeat center;}
+.know-btn{width: 216px;height: 64px;line-height: 64px;text-align: center;color: #fff;font-size: 18px;background: #1E9FFF;position: absolute;top: 73%;left: 50%;margin-left: -108px;border-radius: 5px;cursor: pointer;border: 1px solid #fff;}
+
+.errorElement{color: red;}
+
+.none{display: none;}

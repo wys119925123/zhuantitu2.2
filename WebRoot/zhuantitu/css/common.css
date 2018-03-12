@@ -1,0 +1,100 @@
+/*通用样式*/
+*{
+	margin:0;
+	padding:0;
+	font-family: "Microsoft Yahei";
+	border: 0;
+	box-sizing:border-box;
+}
+html,body{
+	height: 100%;
+	margin: 0;padding: 0;
+}
+ul,li,a,img,span,p{
+	list-style: none;
+	text-decoration: none;
+	margin:0;
+	padding:0;
+}
+img{
+	display: block;
+}
+span{
+	/*display: block;*/
+	width: auto;
+}
+/*页面位置样式*/
+.margin-M{
+	margin-left: auto;
+	margin-right: auto;
+}
+.posit-AB{
+	position: absolute;
+}
+.posit-RE{
+	position: relative;
+}
+.text-CENT{
+	text-align: center;
+}
+.text-R{
+	text-align: right;
+}
+.float-L{
+	float: left;
+}
+.float-R{
+	float: right;
+}
+.img-H{
+	height: 100%;
+}
+.img-IN{
+	display: inline;
+}
+/*字体*/
+.f18{
+	font-size: 18px;
+}
+.f22{
+	font-size: 22px;
+}
+.f12{
+	font-size: 12px;
+}
+
+.f16{
+	font-size: 16px;
+}
+.f14{
+	font-size: 14px;
+}
+.f13{
+	font-size: 13px;
+}
+.f5{
+	font-size: 0.05rem;
+}
+/*字体加粗*/
+.f-W{
+	font-weight: bold;
+}
+/*字体颜色*/
+.color-W{
+	color: #fff;
+}
+.color-B{
+	color: #000;
+}
+.color-9{
+	color: #999;
+}
+.color-R{
+	color: red;
+}
+.color-F3{
+	color: #F34E4E;
+}
+.color-2886EF{
+	color: #2886EF;
+}

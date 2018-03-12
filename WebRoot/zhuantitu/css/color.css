@@ -1,0 +1,12 @@
+.logo-box{border-bottom: 1px solid #1E9FFF;}
+.title{color: #1E9FFF;}
+.tulie{border-bottom: 1px solid #1E9FFF;}
+.tulie2{background: #4EB4FF;color: #fff;cursor: move;}
+.classify,.classify2{border: 1px solid #1E9FFF;}
+.classify:active{background: #1E9FFF;}
+.triangle-right{border-left: 27px solid #0570C0;}
+.revise{color: #74B27B;}
+.check{background: #1ABEFF;}
+.active{background: #1E9FFF;color: #F2F9F3;border:1px solid #fff;}
+.map-option-active{border: 2px solid #1E9FFF; }
+.add-marker-popup-ok{color: #1E9FFF; }
