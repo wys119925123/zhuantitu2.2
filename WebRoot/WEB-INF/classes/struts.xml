@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE struts PUBLIC
+    "-//Apache Software Foundation//DTD Struts Configuration 2.3//EN"
+    "http://struts.apache.org/dtds/struts-2.3.dtd">
+<struts>
+	<!-- 指定Web应用的默认编码集,相当于调用HttpServletRequest的setCharacterEncoding方法 -->
+    <constant name="struts.i18n.encoding" value="UTF-8"/>
+    <!-- 设置浏览器是否缓存静态内容,默认值为true(生产环境下使用),开发阶段最好关闭 -->
+    <constant name="struts.serve.static.browserCache" value="false"/>
+    <!-- 当struts的配置文件修改后,系统是否自动重新加载该文件,默认值为false(生产环境下使用),开发阶段最好打开 -->
+    <constant name="struts.configuration.xml.reload" value="false"/>
+    <!-- 开发模式下使用,这样可以打印出更详细的错误信息 -->
+    <constant name="struts.devMode" value="false" />
+    <!-- struts的action交由spring创建和管理 -->
+    <constant name="struts.objectFactory" value="spring" />
+    <!--  struts文件上传大小限制 -->
+    <constant name="struts.multipart.maxSize" value="10000000000000" />
+    <!-- 文件上传临时文件存放路径 -->
+    <constant name="struts.multipart.saveDir" value="/tmp"/>
+    <!-- 移动端端接口 -->
+    <package name="mobmap" extends="struts-default" namespace="/app">
+    	<action name="*_*" class="{1}Action" method="{2}"></action>
+	</package>
+	<!-- PC端接口 -->
+    <package name="map" extends="struts-default" namespace="/">
+    	<interceptors >
+    		<interceptor name="permissionInterceptor" class="com.zhuantitu.interceptor.PermissionInterceptor"></interceptor>
+    		<interceptor-stack name="teamwareStack">
+                <interceptor-ref name="permissionInterceptor"/>
+                <interceptor-ref name="defaultStack"/>
+            </interceptor-stack>
+    	</interceptors>
+    	<default-interceptor-ref name="teamwareStack"/>
+    	<global-results>
+    		<result name="nologin">/index.jsp</result>
+    		<result name="logout">/index.jsp</result>
+    	</global-results>
+    	<action name="login" class="loginAction">
+    		<result type="redirect">/index?zoneid=${zoneid}</result>
+    	</action>
+    	<action name="login_index" class="loginAction" method="index">
+    		<result name="index">/WEB-INF/jsp/zhuantitu/login.jsp</result>
+    	</action>
+    	<action name="index" class="indexAction">
+    		<result>/WEB-INF/jsp/zhuantitu/main.jsp</result>
+    	</action>
+    	<action name="staticMap" class="staticMapAction">
+    		<result name="pointStaticMap">/WEB-INF/jsp/zhuantitu/point-staticmap.jsp</result>
+    		<result name="polylineStaticMap">/WEB-INF/jsp/zhuantitu/polyline-staticmap.jsp</result>
+    		<result name="polygonStaticMap">/WEB-INF/jsp/zhuantitu/polygon-staticmap.jsp</result>
+    	</action>
+    	<action name="energyMap" class="energyMapAction">
+    		<result name="energymap">/WEB-INF/jsp/zhuantitu/energymap.jsp</result>
+    	</action>
+    	<action name="videoMap" class="videoMapAction">
+    		<result name="videomap">/WEB-INF/jsp/zhuantitu/videomap.jsp</result>
+    	</action>
+		<action name="*_*" class="{1}Action" method="{2}">
+			<result name="energymap2D">/WEB-INF/jsp/zhuantitu/energymap2d.jsp</result>
+			<result name="viewVideo">/WEB-INF/jsp/zhuantitu/viewVideo.jsp</result>
+			<result name="download" type="stream">
+				 <param name="contentType">application/vnd.android.package-archive;</param>
+				 <param name="inputName">inputStream</param>
+				 <param name="contentDisposition">attachment;filename="${fileName}"</param>
+				 <param name="bufferSize">4096</param>
+				 <param name="contentLength">${contentLength}</param>
+			 </result>
+		</action>
+    </package>
+    
+ </struts>
+	
