@@ -469,8 +469,8 @@ drawControls['box'].featureAdded = function(e){
 	}, function(){
 		layer.closeAll();
 		var data = {
-				"frameLonlat":e.geometry.toString().replace('POLYGON((','').replace('))',''),
-				"floorid":$('.right-floor-ctns').find('.floor-pic-chosed').attr('floorid'),
+				"frameLonlat":e.geometry.transform( map.getProjectionObject(),proj).toString().replace('POLYGON((','').replace('))',''),
+				"floorid":$('.right-floor-ctns').find('.floor-pic-chosed').attr('floorid'), 
 				"isSearchFloor":(map.getZoom() > 3?1:0)
 		};
 		
