@@ -168,7 +168,7 @@ String domain = request.getRemoteAddr();
 							<p class="f14"><s:property value="#session.loginUser.name"/></p>
 						</div>
 					</li>
-					<li class="f14 second-li"><img src="<%=path%>/zhuantitu/images/baoanshi.png" alt=""><s:property value="#session.loginUser.rolename"/></li>
+					<li class="f14 second-li"><img src="<%=path%>/zhuantitu/images/baoanshi.png" alt=""><s:property value="#session.loginUser.deptname"/></li>
 					<li class="f14 tirth-li logout" ><img src="<%=path%>/zhuantitu/images/eit.png" alt="">退出登录</li>
 				</ul>
 			</div>

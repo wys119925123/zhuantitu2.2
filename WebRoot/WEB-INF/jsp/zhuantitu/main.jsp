@@ -129,7 +129,7 @@ String path = request.getContextPath();
 									<p class="f14"><s:property value="#session.loginUser.name"/></p>
 								</div>
 							</li>
-							<li class="f14 second-li"><img src="<%=path %>/zhuantitu/login/images/bm.png" alt=""><s:property value="#session.loginUser.rolename"/></li>
+							<li class="f14 second-li"><img src="<%=path %>/zhuantitu/login/images/bm.png" alt=""><s:property value="#session.loginUser.deptname"/></li>
 							<li class="f14 tirth-li logout" style="cursor: pointer;"><img src="<%=path %>/zhuantitu/login/images/tc.png" alt="">退出登录</li>
 						</ul>
 					</div>

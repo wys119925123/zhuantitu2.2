@@ -3,9 +3,12 @@ package com.zhuantitu.action;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
 
+import com.zhuantitu.service.IThematicUserService;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
@@ -15,6 +18,8 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
+import org.apache.struts2.ServletActionContext;
+import org.ly.uap.client.authentication.AttributePrincipal;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Controller;
 
@@ -42,6 +47,9 @@ public class LoginAction extends BaseAction {
 	private String username;
 	private String password;
 	private boolean remember;
+    private String uid;
+    @Resource
+    private IThematicUserService thematicUserService;
 	@Resource
 	private UserMenuPermissionService userMenuPermissionService;
 	@Resource
@@ -80,7 +88,7 @@ public class LoginAction extends BaseAction {
 		}
 		return NONE;
 	}
-	public String index(){
+	/*public String index(){
 		MapCampus mapCampus = this.mapCampusService.getDefaultMapCampus();
 		if(mapCampus != null){
 			List<MapZone> mapZones = this.mapZoneService.getByHql("from MapZone as t where t.mapCampus.campusid = " + mapCampus.getCampusid());
@@ -88,12 +96,58 @@ public class LoginAction extends BaseAction {
 				if(mapZone.getMaptype().toUpperCase().equals("2D")){
 					setZoneid(mapZone.getZoneid());
 				}else{
-					
+
 				}
 			}
 		}
 		return "index";
-	}
+	}*/
+    public String index(){
+        MapCampus mapCampus = this.mapCampusService.getDefaultMapCampus();
+        if(mapCampus != null){
+            List<MapZone> mapZones = this.mapZoneService.getByHql("from MapZone as t where t.mapCampus.campusid = " + mapCampus.getCampusid());
+            for (MapZone mapZone : mapZones) {
+                if(mapZone.getMaptype().toUpperCase().equals("2D")){
+                    setZoneid(mapZone.getZoneid());
+                }else{
+
+                }
+            }
+        }
+        HttpServletRequest request = ServletActionContext.getRequest();
+        AttributePrincipal principal = (AttributePrincipal)request.getUserPrincipal();
+        String pusername = null;
+        if(principal!=null){
+            pusername = principal.getName();
+        }
+        if(username!=null){
+            uid = pusername;
+        }
+        try {
+            if (userMenuPermissionService.hasPermission(uid)) {
+                if (remember) {
+                    addCookie("zhuantiturememberUserInfo", DESHelper.encryptDES("{\"username\":\"" + uid + "\"," + "\"password\":\"" + password + "\"}", encryptKey), 60 * 60 * 24 * 7);
+                } else {
+                    addCookie("zhuantiturememberUserInfo", "", -1);
+                }
+                Map<String, Object> thematicUserMap = thematicUserService.getUserInfo(uid);
+                if (thematicUserMap != null && thematicUserMap.get("avatar") == null) {
+                    thematicUserMap.put("avatar", "zhuantitu/images/touxiang.png");
+                }
+
+                initUserPermission(uid);
+                getSession().setAttribute("loginUser", thematicUserMap);
+                System.out.println(("{\"status\":true}"));
+            } else {
+                writeError(204, "没有系统权限，请联系管理员分配权限");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            writeError(305, "登录失败");
+        }
+        return "main";
+    }
+
 	private String checkLogin(){
 		String result = null;
 		CloseableHttpClient httpclient = HttpClients.createDefault();
@@ -138,7 +192,14 @@ public class LoginAction extends BaseAction {
 		getSession().invalidate();
 		return "logout";
 	}
-	public String getUsername() {
+
+    public String getUid() {
+        return uid;
+    }
+    public void setUid(String uid) {
+        this.uid = uid;
+    }
+    public String getUsername() {
 		return username;
 	}
 	public void setUsername(String username) {

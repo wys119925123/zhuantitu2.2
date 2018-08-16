@@ -13,7 +13,80 @@
     <param-name>log4jRefreshInterval</param-name>
     <param-value>60000</param-value>
   </context-param>
-  <listener>
+
+    <!-- 单点登录配置 -->
+    <!-- For CAS Client 3.2 start-->
+    <listener>
+        <listener-class>org.ly.uap.client.session.SingleSignOutHttpSessionListener</listener-class>
+    </listener>
+
+    <context-param>
+        <param-name>serverName</param-name>
+        <param-value>http://192.168.4.124</param-value>
+    </context-param>
+
+    <filter>
+        <filter-name>Single Sign Out Filter</filter-name>
+        <filter-class>org.ly.uap.client.session.SingleSignOutFilter</filter-class>
+    </filter>
+
+    <filter-mapping>
+        <filter-name>Single Sign Out Filter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+
+    <filter>
+        <filter-name>Authentication Filter</filter-name>
+        <filter-class>org.ly.uap.client.authentication.AuthenticationFilter</filter-class>
+
+        <init-param>
+            <param-name>casServerLoginUrl</param-name>
+            <param-value> https://castest.ctbu.edu.cn/lyuapServer/login </param-value>
+        </init-param>
+    </filter>
+
+    <filter>
+        <filter-name>Validation Filter</filter-name>
+        <filter-class>org.ly.uap.client.validation.Cas20ProxyReceivingTicketValidationFilter</filter-class>
+        <init-param>
+            <param-name>casServerUrlPrefix</param-name>
+            <param-value> https://castest.ctbu.edu.cn/lyuapServer </param-value>
+        </init-param>
+    </filter>
+
+    <filter>
+        <filter-name>HttpServletRequest Wrapper Filter</filter-name>
+        <filter-class>org.ly.uap.client.util.HttpServletRequestWrapperFilter</filter-class>
+    </filter>
+
+    <filter>
+        <filter-name>TransNameFilter</filter-name>
+        <filter-class>org.ly.uap.client.util.TransNameFilter</filter-class>
+    </filter>
+
+    <filter-mapping>
+        <filter-name>TransNameFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+
+    <filter-mapping>
+        <filter-name>Authentication Filter</filter-name>
+        <url-pattern>/protect/*</url-pattern>
+    </filter-mapping>
+
+    <filter-mapping>
+        <filter-name>Validation Filter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+    <filter-mapping>
+        <filter-name>HttpServletRequest Wrapper Filter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+    <!-- For CAS Client 3.2 end-->
+
+
+
+    <listener>
     <listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
   </listener>
   <context-param>
