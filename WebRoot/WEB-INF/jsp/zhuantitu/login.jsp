@@ -54,7 +54,7 @@ if(cookies != null){
 			.sign-btn{width: 100%;height: 48px;background: #32C1FF;color: #fff;border-radius: 5px;margin-top: 25px;cursor: pointer;}
 			#accountNum{background: url(<%=path%>/zhuantitu/newlogin/img/account.png) no-repeat 15px center;padding-left: 40px;}
 			#passtNum{background: url(<%=path%>/zhuantitu/newlogin/img/password.png) no-repeat 15px center;padding-left: 40px;}
-			#special-logo{position: absolute;left: 70px;top: 28px;z-index: 999;}
+			#special-logo{position: absolute;left: 70px;top: 15px;z-index: 999;height: 80px;}
 			.versions{margin-right: 67px;}
 		</style>
 	</head>
