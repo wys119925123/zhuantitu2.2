@@ -40,7 +40,7 @@ public class CameraIconAction extends BaseAction {
 		}
 		json.append("{")
 			.append("\"status\":true,")
-			.append("data:[")
+			.append("\"data\":[")
 			.append(StringUtil.deleteLastStr(temp.toString()))
 			.append("]}");
 		writeJSON(json.toString());
