@@ -67,10 +67,12 @@ function changeFloor(floorid,status){
 	}
 	showFloorMarker(floorid);
 }
-$.ajax({
-    type: "get",
+$.ajax({    
     url:'cameraIcon_loadIcon',
+    type: "POST",
     async: false,
+    cache: false,
+    dataType : "json",
     success: function(json) {
 		if(json.status){
 			$.each(json.data, function(i, v){
@@ -78,9 +80,9 @@ $.ajax({
 					"iconid":v.iconid,
 					"icon":v.path
 				});
-			});
+			});	
 		}
-	    }
+    }
 });
 $.ajax({
     type: "get",
