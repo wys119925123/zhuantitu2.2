@@ -47,7 +47,6 @@ public class LoginAction extends BaseAction {
 	private String username;
 	private String password;
 	private boolean remember;
-    private String uid;
     @Resource
     private IThematicUserService thematicUserService;
 	@Resource
@@ -81,6 +80,7 @@ public class LoginAction extends BaseAction {
 				}
 			}else{
 				writeError(204, "没有系统权限，请联系管理员分配权限");
+				return "noPower";
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -115,16 +115,14 @@ public class LoginAction extends BaseAction {
             }
         }
         HttpServletRequest request = ServletActionContext.getRequest();
+        String uid = request.getRemoteUser();
         AttributePrincipal principal = (AttributePrincipal)request.getUserPrincipal();
         String pusername = null;
         if(principal!=null){
             pusername = principal.getName();
         }
-        if(username!=null){
-            uid = pusername;
-        }
         try {
-            if (userMenuPermissionService.hasPermission(uid)) {
+            if (userMenuPermissionService.hasPermission(username)){
                 if (remember) {
                     addCookie("zhuantiturememberUserInfo", DESHelper.encryptDES("{\"username\":\"" + uid + "\"," + "\"password\":\"" + password + "\"}", encryptKey), 60 * 60 * 24 * 7);
                 } else {
@@ -134,12 +132,10 @@ public class LoginAction extends BaseAction {
                 if (thematicUserMap != null && thematicUserMap.get("avatar") == null) {
                     thematicUserMap.put("avatar", "zhuantitu/images/touxiang.png");
                 }
-
                 initUserPermission(uid);
                 getSession().setAttribute("loginUser", thematicUserMap);
-                System.out.println(("{\"status\":true}"));
             } else {
-                writeError(204, "没有系统权限，请联系管理员分配权限");
+                return "noPermission";
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -193,12 +189,6 @@ public class LoginAction extends BaseAction {
 		return "logout";
 	}
 
-    public String getUid() {
-        return uid;
-    }
-    public void setUid(String uid) {
-        this.uid = uid;
-    }
     public String getUsername() {
 		return username;
 	}

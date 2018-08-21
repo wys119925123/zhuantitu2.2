@@ -41,6 +41,7 @@
     	<action name="login_index" class="loginAction" method="index">
     		<result name="index">/WEB-INF/jsp/zhuantitu/login.jsp</result>
 			<result name="main" type="redirect">/index?zoneid=${zoneid}</result>
+			<result name="noPermission" type="redirect">/noPermission.jsp</result>
     	</action>
     	<action name="index" class="indexAction">
     		<result>/WEB-INF/jsp/zhuantitu/main.jsp</result>
