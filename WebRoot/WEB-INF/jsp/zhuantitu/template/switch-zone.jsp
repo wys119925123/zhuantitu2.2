@@ -13,10 +13,10 @@ String switchpath = request.getContextPath();
 			</div>
 			<div class="fun-sanjiao posit-AB"></div>
 			<div class="map-option"  zoneid="1000">
-				<img class="${zoneid eq '1000'?'map-option-active':''}" src="http://gis.sicnu.edu.cn/mapstatic/3d/img/cl.jpg" title="校区1">
+				<img class="${zoneid eq '1000'?'map-option-active':''}" src="${sysconfigService['xygisUrl']}mapstatic/3d/img/cl.jpg" title="校区1">
 			</div>
-			<div class="map-option" zoneid="1000">
-				<img class="${zoneid eq '1001'?'map-option-active':''}" src="http://gis.sicnu.edu.cn/mapstatic/3d/img/szs.png" title="校区2">
+			<div class="map-option" zoneid="1001">
+				<img class="${zoneid eq '1001'?'map-option-active':''}" src="${sysconfigService['xygisUrl']}mapstatic/3d/img/szs.png" title="校区2">
 			</div>
 		</div>
 	</div>
@@ -27,7 +27,7 @@ $('.map-option').click(function(){
 	if(link.indexOf('?') > 0){
 		location.href = changeURLArg(link,"zoneid",$(this).attr('zoneid'));
 	}else{
-		location.href = lnk + "?zoneid=" + $(this).attr('zoneid');
+		location.href = link + "?zoneid=" + $(this).attr('zoneid');
 	}
 })
 function changeURLArg(url,arg,arg_val){ 
