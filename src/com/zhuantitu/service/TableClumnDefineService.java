@@ -23,6 +23,11 @@ public class TableClumnDefineService {
 		return this.tableClumnDefineDao.getByHQL("from TableClumnDefine as t where t.id.categoryid = " + cid 
 				+ " and t.id.tableName = 'zt_thematic_polygon' order by t.orderid");
 	}
+	public List<TableClumnDefine> loadEquipmentColumn(Integer cid) {
+		return this.tableClumnDefineDao.getByHQL("from TableClumnDefine as t where t.id.categoryid = " + cid 
+				+ " and t.id.tableName = 'zt_thematic_polyline_equipment' order by t.orderid");
+	}
+	
 	public void update(List<TableClumnDefine> tableClumnDefineList) {
 		for (TableClumnDefine tableClumnDefine : tableClumnDefineList) {
 			this.tableClumnDefineDao.update(tableClumnDefine);

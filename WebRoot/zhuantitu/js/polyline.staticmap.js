@@ -20,6 +20,7 @@ function outError(data){
 
 var thematicPolylineCategoryMap = new HashMap();
 var categoryColumnDefineMap = new HashMap();
+var isShowLayer = new HashMap();
 var map = new LMap.Map2D("map", zoneid);
 map.addMeasureAreaControl(function (e) {
     var measure = e.measure;
@@ -63,6 +64,7 @@ function changeFloor(floorid,status){
 	map.showFloorMapById(floorid,status);
 	if(status){
 		showBasePolyline();
+		showBaseEquipment();
 	}
 	showFloorPolyline(floorid);
 }
@@ -170,7 +172,194 @@ $('.more-popup li').click(function(e){
 	changeFloor($(this).find('.floor-pic').attr('floorid'));
 });
 
-var selectControl;
+var selectControl,hoverControl;
+
+
+function showBaseEquipment(){
+	var layers = map.getLayersByName('baseEquipmentLayer');
+	if(layers.length > 0){
+		layers[0].removeAllFeatures();
+		map.removeLayer(layers[0]);
+	}
+	$.ajax({
+	    type: "get",
+	    url:'thematicPolylineEquipment_list',
+	    async: false,
+	    data:{'mid':mid,'floorid':zoneid + '00'},
+	    success: function(d) {
+			if(d.status){
+				var baseEquipmentLayer = new LMap.Layer.Vector('baseEquipmentLayer',{
+					styleMap:new LMap.StyleMap({
+				        "default": new LMap.Style({
+				        	cursor:'pointer',
+							title:'${title}',
+				            strokeWidth: '${strokewidth}',
+				            strokeOpacity: 1,
+				            strokeColor: '${strokecolor}',
+				            fillColor: "${fillcolor}",
+				            fillOpacity: 1
+				        }),
+				        "select": new LMap.Style({
+				        }),
+				        "temporary": new LMap.Style( {
+				            strokeWidth: '${strokewidth}',
+				            strokeOpacity: 0.8,
+				            strokeColor: "${strokecolor}",
+				            fillColor: "${fillcolor}",
+				            fillOpacity: 0.8
+				        })
+				    })
+				});
+				$.each(d.data, function(i, v){
+					if(!isShowLayer.contains(v.equipmenttype) || isShowLayer.get(v.equipmenttype) == 1){
+						var points = []
+						var coordinates = eval(v.coordinates);
+						for(var n = 0; n < coordinates.length; n++){
+							points.push(new LMap.Geometry.Point(coordinates[n][0],
+								coordinates[n][1]).transform(proj, map.getProjectionObject()));
+						}
+						var equipmentFeaure = new LMap.Feature.Vector(
+								new LMap.Geometry.Polygon([new LMap.Geometry.LinearRing(points)]),{
+									gid:v.id,
+									strokewidth:v.strokewidth,
+									strokecolor:"#"+v.strokecolor,
+									fillcolor:"#"+v.fillcolor,
+									title:v.name
+								}
+					    );
+						baseEquipmentLayer.addFeatures(equipmentFeaure);
+					}
+				});
+				map.addLayer(baseEquipmentLayer);
+				baseEquipmentLayer.events.un({
+	    			featureselected:equipmentFeatureselected,
+					featureunselected:equipmentFeatureunselected
+	    		});
+				baseEquipmentLayer.events.on({
+					featureselected:equipmentFeatureselected,
+					featureunselected:equipmentFeatureunselected
+				});
+				
+			}else{
+				outError(d);
+			}
+	    }
+	});
+}
+var editEquipmentData = null;
+function getEquipmentContentHTML(data,columnDefineMap){
+	var temp = [];
+	temp.push("<div><div class=\'xiangxi-box\'>"+
+			"<div class=\'xiangxiTop posit-RE\'>"+
+			"<div class=\'xiangxi-title\'>" + data.name + "</div><div class=\'revise-box f12\'>");
+
+	editEquipmentData = data;
+	temp.push("<span class=\'revise\' onclick=\'showEditPopup(\"equipment\")\'>修改</span><span>|</span>");
+
+
+	temp.push("<span class=\'delet\' onclick=\'deleteEquipment(" + data.id+ ")\'>删除</span><span>|</span>");
+	
+	temp.push("<span class=\'close-xiangxi\'  onclick=\'onPopupClose()\'><img src=\'zhuantitu/images/close1.png\' style=\'margin-top:2px;\' title=\'关闭\' alt=\'\'></span>");
+	temp.push("</div></div><div class=\'xiangqingContent-box posit-RE\'><div class=\'xiangqingContent posit-RE\'><ul class=\'messageBox posit-AB\'>");
+	temp.push(getImageHtml(data.images));
+	columnDefineMap.each(function(k,v){
+		if(v.isShow == 1){
+			if(LqUtil.isNotEmpty(data[k])){
+				temp.push("<li class=\'message-box\'><span class=\'name\'>" + v.columnCnname + ":</span><span class=\'message\'>" + data[k] + "</span></li>");
+			}
+		}
+	});
+	temp.push("</ul>"+
+			"</div>"+
+			"<div class=\'sanjiao-Box posit-AB\'>"+
+			"<div class=\'sanjiao-box posit-RE\'>"+
+			"<div class=\'sanjiao posit-AB\'></div>"+
+			"<div class=\'sanjiao2 posit-AB\'></div>"+
+			"</div>"+
+			"</div>"+
+			"</div>"+
+			"</div></div>");
+	return temp.join('');
+}
+function deleteEquipment(id){
+	layer.confirm('你确定要删除吗？', {
+		shade:[0.5,'#000'],
+		shadeClose: true, 
+		title:'提示',
+		closeBtn:[1],
+		btn: ['确认', '取消'],
+		icon: 3,
+		fadeIn: 1000,
+		yes: function(index){ 
+			$.ajax({
+			    type: "post",
+			    url:'thematicPolylineEquipment_delete',
+			    async: true,
+			    data:{"id":id},
+			    success: function(d) {
+					if(d.status){
+			    		layer.msg('删除成功', {icon:1,shade:0.3,time: 2000},function(){
+		        			refreshMap();
+						});
+			    	}
+				}
+			});
+					
+		    layer.close(index);
+		},cancel: function(index){ 
+		}
+	});
+}
+function equipmentFeatureselected(e){
+	var feature = e.feature;
+	$.ajax({
+	    type: "get",
+	    url:'thematicPolylineEquipment_detail',
+	    async: true,
+	    data:{'id':feature.attributes.gid},
+	    success: function(d) {
+		if(d.status){
+			if(categoryColumnDefineMap.contains(d.equipmenttype)){
+				polylinePopup = createPopup(feature.attributes.gid,feature.geometry.getBounds().getCenterLonLat(),-140,0);
+				polylinePopup.setContentHTML(getEquipmentContentHTML(d,categoryColumnDefineMap.get(d.equipmenttype)));
+				map.addPopup(polylinePopup);
+			}else{
+				$.ajax({
+				    type: "get",
+				    url:'tableClumnDefine_loadEquipmentByCid',
+				    async: true,
+				    data:{'id':d.equipmenttype},
+				    success: function(json) {
+					if(json.status){
+						var columnDefineMap = new HashMap();
+						$.each(json.data, function(i, v){
+							columnDefineMap.put(v.columnName,{
+								'columnName':v.columnName,
+								'columnCnname':v.columnCnname,
+								'columnType':v.columnType,
+								'isRequired':v.isRequired,
+								'isShow':v.isShow
+							});
+						});
+						categoryColumnDefineMap.put(d.equipmenttype,columnDefineMap);
+						polylinePopup = createPopup(feature.attributes.gid,feature.geometry.getBounds().getCenterLonLat(),-140,0);
+						polylinePopup.setContentHTML(getEquipmentContentHTML(d,columnDefineMap));
+						map.addPopup(polylinePopup);
+					}else{
+						outError(json);
+					}
+				    }
+				});
+			}
+		}else{
+			outError(d);
+		}
+	    }
+	});
+}
+function equipmentFeatureunselected(e){
+	destroyPolylinePopup();
+}
 function showBasePolyline(){
 	var layers = map.getLayersByName('basePolylineLayer');
 	if(layers.length > 0){
@@ -183,59 +372,163 @@ function showBasePolyline(){
 	    async: false,
 	    data:{'mid':mid,'floorid':zoneid + '00'},
 	    success: function(d) {
+			if(d.status){
+			
+				var basePolylineLayer = new LMap.Layer.Vector('basePolylineLayer',{
+					styleMap:new LMap.StyleMap({
+				        "default": new LMap.Style({
+				        	cursor:'pointer',
+							title:'${title}',
+				            strokeWidth: '${strokewidth}',
+				            strokeOpacity: 1,
+				            strokeColor: '${strokecolor}',
+				            fillColor: "${fillcolor}",
+				            fillOpacity: 1
+				        }),
+				        "select": new LMap.Style({
+				        }),
+				        "temporary": new LMap.Style( {
+				            strokeWidth: '${strokewidth}',
+				            strokeOpacity: 0.8,
+				            strokeColor: "${strokecolor}",
+				            fillColor: "${fillcolor}",
+				            fillOpacity: 0.8
+				        })
+				    })
+				});
+				$.each(d.data, function(i, v){
+					if(!isShowLayer.contains(v.categoryid) || isShowLayer.get(v.categoryid) == 1){
+						var points = []
+						var coordinates = eval(v.coordinates);
+						for(var n = 0; n < coordinates.length; n++){
+							points.push(new LMap.Geometry.Point(coordinates[n][0],
+								coordinates[n][1]).transform(proj, map.getProjectionObject()));
+						}
+						var polylineFeaure = new LMap.Feature.Vector(
+								new LMap.Geometry.LineString(points),{
+									gid:v.polylineid,
+									strokewidth:v.strokewidth,
+									strokecolor:"#"+v.strokecolor,
+									title:v.name
+								}
+					    );
+						basePolylineLayer.addFeatures(polylineFeaure);
+					}
+				});
+				map.addLayer(basePolylineLayer);
+				basePolylineLayer.events.un({
+	    			featureselected:polylineFeatureselected,
+					featureunselected:polylineFeatureunselected
+	    		});
+				basePolylineLayer.events.on({
+					featureselected:polylineFeatureselected,
+					featureunselected:polylineFeatureunselected
+				});
+				
+			}else{
+				outError(d);
+			}
+	    }
+	});
+}
+function showFloorEquipment(floorid){
+	var layers = map.getLayersByName('floorEquipmentLayer');
+	if(layers.length > 0){
+		layers[0].removeAllFeatures();
+		map.removeLayer(layers[0]);
+	}
+	$.ajax({
+	    type: "get",
+	    url:'thematicPolylineEquipment_list',
+	    async: true,
+	    data:{'mid':mid,'floorid':floorid},
+	    success: function(d) {
 		if(d.status){
-			var basePolylineLayer = new LMap.Layer.Vector('basePolylineLayer',{
+			var floorEquipmentLayer = new LMap.Layer.Vector('floorEquipmentLayer',{
 				styleMap:new LMap.StyleMap({
-			        "default": new LMap.Style({
-			        	cursor:'pointer',
-						title:'${title}',
-			            strokeWidth: '${strokewidth}',
-			            strokeOpacity: 0.8,
-			            strokeColor: '${strokecolor}'
-			        }),
-			        "select": new LMap.Style({
-			        }),
-			        "temporary": new LMap.Style( {
-			            strokeWidth: '${strokewidth}',
-			            strokeOpacity: 0.8,
-			            strokeColor: "#ff0000"
-			        })
-			    })
+				        "default": new LMap.Style({
+				        	cursor:'pointer',
+							title:'${title}',
+				            strokeWidth: '${strokewidth}',
+				            strokeOpacity: 1,
+				            strokeColor: '${strokecolor}',
+				            fillColor: "${fillcolor}",
+				            fillOpacity: 1
+				        }),
+				        "select": new LMap.Style({
+				        }),
+				        "temporary": new LMap.Style( {
+				            strokeWidth: '${strokewidth}',
+				            strokeOpacity: 0.8,
+				            strokeColor: "${strokecolor}",
+				            fillColor: "${fillcolor}",
+				            fillOpacity: 0.8
+				        })
+				    })
+			
 			});
 			$.each(d.data, function(i, v){
-				//var polylineWkt = "MULTILINESTRING " + v.coordinates.replace('[[','((').replace(']]','))').replace(/\],\[/g,'-').replace(/\[/g,'').replace(/\,/g,' ').replace(/\-/g,',');
-				var points = []
-				var coordinates = eval(v.coordinates);
-				for(var n = 0; n < coordinates.length; n++){
-					points.push(new LMap.Geometry.Point(coordinates[n][0],
-						coordinates[n][1]).transform(proj, map.getProjectionObject()));
-				}
-				var polylineFeaure = new LMap.Feature.Vector(
-						new LMap.Geometry.LineString(points),{
-							gid:v.polylineid,
-							strokewidth:v.strokewidth,
-							strokecolor:"#"+v.strokecolor,
-							title:v.name
+				if(!isShowLayer.contains(v.equipmenttype) || isShowLayer.get(v.equipmenttype) == 1){
+						var points = []
+						var coordinates = eval(v.coordinates);
+						for(var n = 0; n < coordinates.length; n++){
+							points.push(new LMap.Geometry.Point(coordinates[n][0],
+								coordinates[n][1]).transform(proj, map.getProjectionObject()));
 						}
-			    );
-				basePolylineLayer.addFeatures(polylineFeaure);
+						var equipmentFeaure = new LMap.Feature.Vector(
+								new LMap.Geometry.Polygon([new LMap.Geometry.LinearRing(points)]),{
+									gid:v.id,
+									strokewidth:v.strokewidth,
+									strokecolor:"#"+v.strokecolor,
+									fillcolor:"#"+v.fillcolor,
+									title:v.name
+								}
+					    );
+						floorEquipmentLayer.addFeatures(equipmentFeaure);
+					}
 			});
-			map.addLayer(basePolylineLayer);
-			basePolylineLayer.events.un({
-    			featureselected:polylineFeatureselected,
-				featureunselected:polylineFeatureunselected
+			if(map.getZoom() < 4){
+				floorEquipmentLayer.setVisibility(false);
+			}
+			map.addLayer(floorEquipmentLayer);
+			
+			floorEquipmentLayer.events.un({
+    			featureselected:equipmentFeatureselected,
+				featureunselected:equipmentFeatureunselected
     		});
-			basePolylineLayer.events.on({
-				featureselected:polylineFeatureselected,
-				featureunselected:polylineFeatureunselected
+			floorEquipmentLayer.events.on({
+				featureselected:equipmentFeatureselected,
+				featureunselected:equipmentFeatureunselected
 			});
+
+			if(hoverControl){
+				hoverControl.deactivate();
+				selectControl.deactivate();
+				map.removeControl(hoverControl);
+				map.removeControl(selectControl);
+			}
+			hoverControl = new LMap.Control.SelectFeature([floorEquipmentLayer,map.getLayersByName('basePolylineLayer')[0],
+				map.getLayersByName('baseEquipmentLayer')[0],
+				map.getLayersByName('floorPolylineLayer')[0]],{
+		        hover:true,
+		        highlightOnly:true,
+		        renderIntent:"temporary"
+		    });
+		    map.addControl(hoverControl);
+		    hoverControl.activate();
+		
+		
+		    selectControl = new LMap.Control.SelectFeature([floorEquipmentLayer,map.getLayersByName('basePolylineLayer')[0],
+		    	map.getLayersByName('baseEquipmentLayer')[0],
+				map.getLayersByName('floorPolylineLayer')[0]],{clickout:true});
+		    map.addControl(selectControl);
+		    selectControl.activate();
 		}else{
 			outError(d);
 		}
 	    }
 	});
 }
-
 function showFloorPolyline(floorid){
 	var layers = map.getLayersByName('floorPolylineLayer');
 	if(layers.length > 0){
@@ -261,29 +554,30 @@ function showFloorPolyline(floorid){
 			        "select": new LMap.Style({
 			        }),
 			        "temporary": new LMap.Style( {
-			            strokeWidth: '${strokewidth}'+2,
+			            strokeWidth: '${strokewidth}',
 			            strokeOpacity: 0.8,
 			            strokeColor: "#ff0000"
 			        })
 			    })
 			});
 			$.each(d.data, function(i, v){
-				//var polylineWkt = "MULTILINESTRING " + v.coordinates.replace('[[','((').replace(']]','))').replace(/\],\[/g,'-').replace(/\[/g,'').replace(/\,/g,' ').replace(/\-/g,',');
-				var points = []
-				var coordinates = eval(v.coordinates);
-				for(var n = 0; n < coordinates.length; n++){
-					points.push(new LMap.Geometry.Point(coordinates[n][0],
-						coordinates[n][1]).transform(proj, map.getProjectionObject()));
+				if(!isShowLayer.contains(v.categoryid) || isShowLayer.get(v.categoryid) == 1){
+					var points = []
+					var coordinates = eval(v.coordinates);
+					for(var n = 0; n < coordinates.length; n++){
+						points.push(new LMap.Geometry.Point(coordinates[n][0],
+							coordinates[n][1]).transform(proj, map.getProjectionObject()));
+					}
+					var polylineFeaure = new LMap.Feature.Vector(
+							new LMap.Geometry.LineString(points),{
+								gid:v.polylineid,
+								strokewidth:v.strokewidth,
+								strokecolor:"#"+ v.strokecolor,
+								title:v.name
+							}
+				    );
+					floorPolylineLayer.addFeatures(polylineFeaure);
 				}
-				var polylineFeaure = new LMap.Feature.Vector(
-						new LMap.Geometry.LineString(points),{
-							gid:v.polylineid,
-							strokewidth:v.strokewidth,
-							strokecolor:"#"+ v.strokecolor,
-							title:v.name
-						}
-			    );
-				floorPolylineLayer.addFeatures(polylineFeaure);
 			});
 			if(map.getZoom() < 4){
 				floorPolylineLayer.setVisibility(false);
@@ -298,18 +592,8 @@ function showFloorPolyline(floorid){
 				featureselected:polylineFeatureselected,
 				featureunselected:polylineFeatureunselected
 			});
-			var hoverControl = new LMap.Control.SelectFeature([floorPolylineLayer,map.getLayersByName('basePolylineLayer')[0]],{
-		        hover:true,
-		        highlightOnly:true,
-		        renderIntent:"temporary"
-		    });
-		    map.addControl(hoverControl);
-		    hoverControl.activate();
-		
-		
-		    selectControl = new LMap.Control.SelectFeature([floorPolylineLayer,map.getLayersByName('basePolylineLayer')[0]],{clickout:true});
-		    map.addControl(selectControl);
-		    selectControl.activate();
+			showFloorEquipment(floorid);
+			
 		}else{
 			outError(d);
 		}
@@ -326,6 +610,16 @@ map.registerEvent('moveend',function(e){
 			layers[0].setVisibility(false);
 		}
 	}
+	layers = map.getLayersByName('floorEquipmentLayer');
+	if(layers.length > 0){
+		if(map.getZoom() > 3){
+			layers[0].setVisibility(true);
+		}else{
+			layers[0].setVisibility(false);
+		}
+	}
+	
+	
 });
 var polylinePopup = null;
 function createPopup(gid,lonlat,x,y){
@@ -367,19 +661,19 @@ function deletePolyline(id){
 		fadeIn: 1000,
 		yes: function(index){ 
 			$.ajax({
-	    type: "post",
-	    url:'thematicPolyline_delete',
-	    async: true,
-	    data:{"id":id},
-	    success: function(d) {
-		if(d.status){
-		    		layer.msg('删除成功', {icon:1,shade:0.3,time: 2000},function(){
-            			refreshMap();
-					});
-		    	}
-	    }
-	});
-			
+			    type: "post",
+			    url:'thematicPolyline_delete',
+			    async: true,
+			    data:{"id":id},
+			    success: function(d) {
+					if(d.status){
+			    		layer.msg('删除成功', {icon:1,shade:0.3,time: 2000},function(){
+		        			refreshMap();
+						});
+			    	}
+				}
+			});
+					
 		    layer.close(index);
 		},cancel: function(index){ 
 		}
@@ -411,7 +705,7 @@ function getPolylineContentHTML(data,columnDefineMap){
 			"<div class=\'xiangxi-title\'>" + data.name + "</div><div class=\'revise-box f12\'>");
 	if(data.editPermissiont == 1){
 		editPolylineData = data;
-		temp.push("<span class=\'revise\' onclick=\'showEditPopup()\'>修改</span><span>|</span>");
+		temp.push("<span class=\'revise\' onclick=\'showEditPopup(\"polyline\")\'>修改</span><span>|</span>");
 	}else{
 		editPolylineData = null;
 	}	
@@ -488,6 +782,9 @@ function polylineFeatureselected(e){
 	});
 	
 }
+function equipmentFeatureunselected(e){
+	destroyPolylinePopup();
+}
 function polylineFeatureunselected(e){
 	destroyPolylinePopup();
 }
@@ -515,6 +812,11 @@ var drawLayerStyles = new LMap.StyleMap({
                         strokeWidth: 2,
                         strokeOpacity: 1,
                         strokeColor: "#ff0000"
+                    },
+					"circle":{
+                        strokeWidth: 4,
+                        strokeOpacity: 1,
+                        strokeColor: "#1C86EE"
                     }
                 }
             })
@@ -539,6 +841,11 @@ var drawLayerStyles = new LMap.StyleMap({
                         strokeColor: "#00ccff"
                     },
                     "Polygon":{
+                        strokeWidth: 2,
+                        strokeOpacity: 1,
+                        strokeColor: "#00ccff"
+                    },
+					"circle":{
                         strokeWidth: 2,
                         strokeOpacity: 1,
                         strokeColor: "#00ccff"
@@ -569,6 +876,11 @@ var drawLayerStyles = new LMap.StyleMap({
                         strokeWidth: 2,
                         strokeOpacity: 1,
                         strokeColor: "#00ccff"
+                    },
+					"circle":{
+                        strokeWidth: 2,
+                        strokeOpacity: 1,
+                        strokeColor: "#1C86EE"
                     }
                 }
             })
@@ -592,7 +904,15 @@ var drawControls = {
             LMap.Handler.RegularPolygon, {
                 handlerOptions: {
                     sides: 4,
-                    irregular: true
+                    irregular: false
+                }
+            }
+    ),
+    circle:new LMap.Control.DrawFeature(drawLayer,
+            LMap.Handler.RegularPolygon, {
+                handlerOptions: {
+                    sides: 48,
+                    irregular: false
                 }
             }
     ),
@@ -600,6 +920,8 @@ var drawControls = {
     modify: new LMap.Control.ModifyFeature(drawLayer)
 };
 map.addControl(drawControls['line']);
+map.addControl(drawControls['box']);
+map.addControl(drawControls['circle']);
 map.addControl(drawControls['modify']);
 map.addControl(drawControls['snapping']);
 drawControls['snapping'].activate();
@@ -633,6 +955,7 @@ LMap.Event.observe(document, "keydown", function(evt) {
         LMap.Event.stop(evt);
     }
 });
+var saveType = 'polyline';
 var startEdit = function(){
     drawControls['modify'].activate();
 }
@@ -648,9 +971,83 @@ var refreshDrawLayer = function(){
 	}
 	map.addLayer(drawLayer);
 }
-
+/********绘制正方形*********/
+//画正方形结束回调
+drawControls['box'].featureAdded = function(e) {
+	$('.add-new-box').click();
+    console.log("box：" + e.geometry.toString());
+    saveType = 'box';
+    showAddPopup('box');
+}
+//开始画正方形
+var startDrawBox = function(){
+	stopDrawLine();
+	stopDrawCircle();
+	refreshDrawLayer();
+    drawControls['box'].activate();
+}
+//结束画正方形
+var stopDrawBox = function(){
+    drawControls['box'].deactivate();
+}
+$('.add-new-box').click(function(e){
+	$('.add-new-circle').removeClass('add-active').css('background', '#fff');
+	$('.add-new-polyline').removeClass('add-active').css('background', '#fff');
+	if($(this).hasClass('add-active')){
+		$(this).removeClass('add-active');
+		$(this).css('background', '#fff');
+		stopDrawBox();
+	}else{
+		$(this).addClass('add-active');
+		$(this).css('background', '#cacaca');
+		hideLeftLine();
+		startDrawBox();
+		layer.tips('点击地绘制链路设备', '.add-new-box', {
+		  tips: [3, '#1E9FFF']
+		});
+	}
+});
+/********绘制圆*********/
+//画圆结束回调
+drawControls['circle'].featureAdded = function(e) {
+	$('.add-new-circle').click();
+    console.log("circle" + e.geometry.toString());
+    saveType = 'circle';
+    showAddPopup('circle');
+}
+//开始画圆
+var startDrawCircle = function(){
+	stopDrawLine();
+	stopDrawBox();
+	refreshDrawLayer();
+    drawControls['circle'].activate();
+}
+//结束画圆
+var stopDrawCircle = function(){
+    drawControls['circle'].deactivate();
+}
+$('.add-new-circle').click(function(e){
+	$('.add-new-box').removeClass('add-active').css('background', '#fff');
+	$('.add-new-polyline').removeClass('add-active').css('background', '#fff');
+	if($(this).hasClass('add-active')){
+		$(this).removeClass('add-active');
+		$(this).css('background', '#fff');
+		stopDrawCircle();
+	}else{
+		$(this).addClass('add-active');
+		$(this).css('background', '#cacaca');
+		hideLeftLine();
+		startDrawCircle();
+		layer.tips('点击地图绘制管井盖', '.add-new-circle', {
+		  tips: [3, '#1E9FFF']
+		});
+	}
+});
+/********绘制线*********/
 var startDrawLine = function(){
 	refreshDrawLayer();
+	stopDrawBox();
+	stopDrawCircle();
     drawControls['line'].activate();
 }
 var stopDrawLine = function(){
@@ -658,11 +1055,14 @@ var stopDrawLine = function(){
 }
 drawControls['line'].featureAdded = function(e) {
     $('.add-new-polyline').click();
+    saveType = 'polyline';
     startEdit();
     drawControls['modify'].selectFeature(e);
-    showAddPopup();
+    showAddPopup('polyline');
 }
 $('.add-new-polyline').click(function(e){
+	$('.add-new-circle').removeClass('add-active').css('background', '#fff');
+	$('.add-new-box').removeClass('add-active').css('background', '#fff');
 	if($(this).hasClass('add-active')){
 		$(this).removeClass('add-active');
 		$(this).css('background', '#fff');
@@ -677,6 +1077,8 @@ $('.add-new-polyline').click(function(e){
 		});
 	}
 });
+
+
 function hideLeftLine(){
 	$(".left-line").animate({left:-258},"slow",function(){
 	    	$(this).hide();
@@ -688,103 +1090,164 @@ function showLeftLine(){
 
 $('.close-line-btn, .delet-line').click(function(e){
 	hideLeftLine();
+	refreshMap();
 	refreshDrawLayer();
 })
 
-function showEditPopup(){
+function showEditPopup(type){
 	$('.lint-title').html('编辑');
 	$('.line-form-content').empty();
 	var temp = [];
 	temp.push("<li class=\"upload-img\"><span>图片：</span><div class=\"add-list\">");
 	var imgNode = "";
-	$.each(editPolylineData.images, function(i, v){
-		imgNode += "<div class=\"added-img float-L posit-RE\">"+
-								"<span class=\"add-img-close posit-AB\"><img src=\"zhuantitu/images/close-1.png\" title=\"删除\"></span>"+
-								"<img src=\"" + v.path +"\" >" +
-								"<input type=\'hidden\' value=\'" + v.path +"\' name=\'images\'/></div>"
-	});
-	temp.push(imgNode);
-	temp.push("<div class=\"upload upload-btn float-L " + (editPolylineData.images.length > 3?'none':'') + "\"><img src=\"zhuantitu/images/004.png\"></div></div></li>");
-	temp.push("<li><label><b class=\"requird-logo\"></b>楼层：</label><select class=\'required\' name=\'thematicPolyline.floorid\' >");
-	temp.push("<option value=\'" + zoneid + "00\' >室外</option>");
-	$.each(floorInfo, function(i, v){
-		temp.push("<option value=\'" + v.floorid + "\' " +(v.floorid == editPolylineData.floorid?'selected':'') + ">" + v.name + "</option>");
-	});
-	temp.push("</select></li>");
-	temp.push("<li><label><b class=\"requird-logo\"></b>线路类型：</label><select class=\'required\' name=\'thematicPolyline.thematicPolylineCategory.categoryid\' onchange=\'generatingColumn(this.value)\'>");
-	thematicPolylineCategoryMap.each(function(k,v){
-		temp.push("<option value=\'" + v.categoryid + "\' " +(v.categoryid == editPolylineData.categoryid?'selected':'') + ">" + v.name + "</option>");
-	});
-	temp.push("</select>" +
-		"<input type=\'hidden\' value=\'edit\' id=\'submitType\' />"+
-		"<input type=\'hidden\' name=\'thematicPolyline.strokewidth\' id=\'strokewidth\' value=\'" + editPolylineData.strokewidth + "\'/>" +
-		"<input type=\'hidden\' name=\'thematicPolyline.strokecolor\' id=\'strokecolor\' value=\'" + editPolylineData.strokecolor + "\'/>" +
-		"<input type=\'hidden\' name=\'thematicPolyline.icon\' value=\'" + editPolylineData.icon + "\' id=\'pointIcon\'/>"+
-		"<input type=\'hidden\' value=\'" + "LINESTRING" + editPolylineData.coordinates.replace('[[','(').replace(']]',')').replace(/\],\[/g,'-').replace(/\[/g,'').replace(/\,/g,' ').replace(/\-/g,',').replace(/\s+/g,"-") +"\' name=\'lonlat\' id=\'lonlat\' />"+
-		"<input type=\'hidden\' value=\'" + editPolylineData.polylineid +"\' name=\'thematicPolyline.polylineid\' />"+
-		"<input type=\'hidden\' value=\'" + mid + "\' name=\'mid\'/></li>");
-	$('.line-form-content').append(temp.join(''));
-	generatingColumn(editPolylineData.categoryid,editPolylineData);
-	uploadImage();
-	showLeftLine();
-	delImg();
+	if(type == 'polyline'){
+		saveType = 'polyline';
+		$.each(editPolylineData.images, function(i, v){
+			imgNode += "<div class=\"added-img float-L posit-RE\">"+
+									"<span class=\"add-img-close posit-AB\"><img src=\"zhuantitu/images/close-1.png\" title=\"删除\"></span>"+
+									"<img src=\"" + v.path +"\" >" +
+									"<input type=\'hidden\' value=\'" + v.path +"\' name=\'images\'/></div>"
+		});
+		temp.push(imgNode);
+		temp.push("<div class=\"upload upload-btn float-L " + (editPolylineData.images.length > 3?'none':'') + "\"><img src=\"zhuantitu/images/004.png\"></div></div></li>");
+		temp.push("<li><label><b class=\"requird-logo\"></b>楼层：</label><select class=\'required\' name=\'thematicPolyline.floorid\' >");
+		temp.push("<option value=\'" + zoneid + "00\' >室外</option>");
+		$.each(floorInfo, function(i, v){
+			temp.push("<option value=\'" + v.floorid + "\' " +(v.floorid == editPolylineData.floorid?'selected':'') + ">" + v.name + "</option>");
+		});
+		temp.push("</select></li>");
+		temp.push("<li><label><b class=\"requird-logo\"></b>线路类型：</label><select class=\'required\' name=\'thematicPolyline.thematicPolylineCategory.categoryid\' onchange=\'generatingColumn(this.value)\'>");
+		thematicPolylineCategoryMap.each(function(k,v){
+			temp.push("<option value=\'" + v.categoryid + "\' " +(v.categoryid == editPolylineData.categoryid?'selected':'') + ">" + v.name + "</option>");
+		});
+		temp.push("</select>" +
+			"<input type=\'hidden\' value=\'edit\' id=\'submitType\' />"+
+			"<input type=\'hidden\' name=\'thematicPolyline.strokewidth\' id=\'strokewidth\' value=\'" + editPolylineData.strokewidth + "\'/>" +
+			"<input type=\'hidden\' name=\'thematicPolyline.strokecolor\' id=\'strokecolor\' value=\'" + editPolylineData.strokecolor + "\'/>" +
+			"<input type=\'hidden\' name=\'thematicPolyline.icon\' value=\'" + editPolylineData.icon + "\' id=\'pointIcon\'/>"+
+			"<input type=\'hidden\' value=\'" + "LINESTRING" + editPolylineData.coordinates.replace('[[','(').replace(']]',')').replace(/\],\[/g,'-').replace(/\[/g,'').replace(/\,/g,' ').replace(/\-/g,',').replace(/\s+/g,"-") +"\' name=\'lonlat\' id=\'lonlat\' />"+
+			"<input type=\'hidden\' value=\'" + editPolylineData.polylineid +"\' name=\'thematicPolyline.polylineid\' />"+
+			"<input type=\'hidden\' value=\'" + mid + "\' name=\'mid\'/></li>");
+		$('.line-form-content').append(temp.join(''));
+		generatingColumn(editPolylineData.categoryid,editPolylineData);
+		uploadImage();
+		showLeftLine();
+		delImg();
+		
+		destroyPolylinePopup();
 	
-	destroyPolylinePopup();
 
-	var basePolylineLayer = map.getLayersByName('basePolylineLayer');
-	if(basePolylineLayer.length > 0){
-		basePolylineLayer[0].removeAllFeatures();
-		map.removeLayer(basePolylineLayer[0]);
+		refreshDrawLayer();
+		var points = []
+		var coordinates = eval(editPolylineData.coordinates);
+		for(var n = 0; n < coordinates.length; n++){
+			points.push(new LMap.Geometry.Point(coordinates[n][0],
+				coordinates[n][1]).transform(proj, map.getProjectionObject()));
+		}
+		var polylineFeaure = new LMap.Feature.Vector(
+				new LMap.Geometry.LineString(points),{}
+	    );
+		stopEdit();
+		startEdit();
+		drawControls['modify'].layer.addFeatures(polylineFeaure);
+		drawControls['modify'].selectFeature(polylineFeaure);
+	}else{
+		saveType = 'box';
+		$.each(editEquipmentData.images, function(i, v){
+			imgNode += "<div class=\"added-img float-L posit-RE\">"+
+									"<span class=\"add-img-close posit-AB\"><img src=\"zhuantitu/images/close-1.png\" title=\"删除\"></span>"+
+									"<img src=\"" + v.path +"\" >" +
+									"<input type=\'hidden\' value=\'" + v.path +"\' name=\'images\'/></div>"
+		});
+		temp.push(imgNode);
+		temp.push("<div class=\"upload upload-btn float-L " + (editEquipmentData.images.length > 3?'none':'') + "\"><img src=\"zhuantitu/images/004.png\"></div></div></li>");
+		temp.push("<li><label><b class=\"requird-logo\"></b>楼层：</label><select class=\'required\' name=\'thematicPolylineEquipment.floorid\' >");
+		temp.push("<option value=\'" + zoneid + "00\' >室外</option>");
+		$.each(floorInfo, function(i, v){
+			temp.push("<option value=\'" + v.floorid + "\' " +(v.floorid == editEquipmentData.floorid?'selected':'') + ">" + v.name + "</option>");
+		});
+		temp.push("</select>");
+		temp.push("<input type=\'hidden\' name=\'thematicPolylineEquipment.strokewidth\' value=\'" + editEquipmentData.strokewidth + "\'/>" +
+						"<input type=\'hidden\' name=\'thematicPolylineEquipment.strokecolor\' value=\'" + editEquipmentData.strokecolor + "\'/>" +
+						"<input type=\'hidden\' name=\'thematicPolylineEquipment.fillcolor\' value=\'" + editEquipmentData.fillcolor + "\'/>" +
+						"<input type=\'hidden\' name=\'thematicPolylineEquipment.equipmenttype\' value=\'" + editEquipmentData.equipmenttype + "\'/>" +
+						"<input type=\'hidden\' value=\'" + mid + "\' name=\'thematicPolylineEquipment.thematicMapMenu.menuid\'/>" +
+						"<input type=\'hidden\' value=\'" + mid + "\' name=\'mid\'/>" +
+						"<input type=\'hidden\' value=\'" + editEquipmentData.id +"\' name=\'thematicPolylineEquipment.id\' />" +
+						"<input type=\'hidden\' value=\'" + "POLYGON" + editEquipmentData.coordinates.replace('[[','((').replace(']]','))').replace(/\],\[/g,'-').replace(/\[/g,'').replace(/\,/g,' ').replace(/\-/g,',').replace(/\s+/g,"-") +"\' name=\'lonlat\' id=\'lonlat\' />"+
+
+						"</li>");
+	
+		$('.line-form-content').append(temp.join(''));
+		generatingEquipmentColumn(editEquipmentData.equipmenttype,editEquipmentData);
+		uploadImage();
+		showLeftLine();
+		delImg();
+		
+		destroyPolylinePopup();
+		
+
 	}
-	var floorPolylineLayer = map.getLayersByName('floorPolylineLayer');
-	if(floorPolylineLayer.length > 0){
-		floorPolylineLayer[0].removeAllFeatures();
-		map.removeLayer(floorPolylineLayer[0]);
-	}
-	refreshDrawLayer();
-	//var polylineWkt = "MULTILINESTRING " + editPolylineData.coordinates.replace('[[','((').replace(']]','))').replace(/\],\[/g,'-').replace(/\[/g,'').replace(/\,/g,' ').replace(/\-/g,',');
-	var points = []
-	var coordinates = eval(editPolylineData.coordinates);
-	for(var n = 0; n < coordinates.length; n++){
-		points.push(new LMap.Geometry.Point(coordinates[n][0],
-			coordinates[n][1]).transform(proj, map.getProjectionObject()));
-	}
-	var polylineFeaure = new LMap.Feature.Vector(
-			new LMap.Geometry.LineString(points),{}
-    );
-	stopEdit();
-	startEdit();
-	drawControls['modify'].layer.addFeatures(polylineFeaure);
-	drawControls['modify'].selectFeature(polylineFeaure);
+	
+	
 	
 
 }
-function showAddPopup(){
+function showAddPopup(type){
 	$('.lint-title').html('添加');
 	$('.line-form-content').empty();
 	var temp = [];
 	temp.push("<li class=\"upload-img\"><span>图片：</span><div class=\"add-list\"><div class=\"upload upload-btn float-L\"><img src=\"zhuantitu/images/004.png\"></div></div></li>");
-	temp.push("<li><label><b class=\"requird-logo\"></b>楼层：</label><select class=\'required\' name=\'thematicPolyline.floorid\' >");
-	temp.push("<option value=\'" + zoneid + "00\' >室外</option>");
-	$.each(floorInfo, function(i, v){
-		temp.push("<option value=\'" + v.floorid + "\'>" + v.name + "</option>");
-	});
-	temp.push("</select></li>");
-	temp.push("<li><label><b class=\"requird-logo\"></b>线路类型：</label><select class=\'required\' name=\'thematicPolyline.thematicPolylineCategory.categoryid\' onchange=\'generatingColumn(this.value)\'>");
-	thematicPolylineCategoryMap.each(function(k,v){
-		temp.push("<option value=\'" + v.categoryid + "\'>" + v.name + "</option>");
-	});
-	temp.push("</select>" +
-			"<input type=\'hidden\' name=\'thematicPolyline.strokewidth\' id=\'strokewidth\'/>" +
-			"<input type=\'hidden\' name=\'thematicPolyline.strokecolor\' id=\'strokecolor\'/>" +
-			"<input type=\'hidden\' value=\'" + mid + "\' name=\'mid\'/>" +
-			"<input type=\'hidden\' value=\'add\' id=\'submitType\' />" +
-			"<input type=\'hidden\' name=\'lonlat\' id=\'lonlat\'/></li>");
-	$('.line-form-content').append(temp.join(''));
-	generatingColumn(thematicPolylineCategoryMap.keys[0],null);
-	showLeftLine();
-	uploadImage();
-	destroyPolylinePopup();
+	if(type=='polyline'){
+		temp.push("<li><label><b class=\"requird-logo\"></b>楼层：</label><select class=\'required\' name=\'thematicPolyline.floorid\' >");
+		temp.push("<option value=\'" + zoneid + "00\' >室外</option>");
+		$.each(floorInfo, function(i, v){
+			temp.push("<option value=\'" + v.floorid + "\'>" + v.name + "</option>");
+		});
+		temp.push("</select></li>");
+		temp.push("<li><label><b class=\"requird-logo\"></b>线路类型：</label><select class=\'required\' name=\'thematicPolyline.thematicPolylineCategory.categoryid\' onchange=\'generatingColumn(this.value)\'>");
+		thematicPolylineCategoryMap.each(function(k,v){
+			temp.push("<option value=\'" + v.categoryid + "\'>" + v.name + "</option>");
+		});
+		temp.push("</select>" +
+				"<input type=\'hidden\' name=\'thematicPolyline.strokewidth\' id=\'strokewidth\'/>" +
+				"<input type=\'hidden\' name=\'thematicPolyline.strokecolor\' id=\'strokecolor\'/>" +
+				"<input type=\'hidden\' value=\'" + mid + "\' name=\'mid\'/>" +
+				"<input type=\'hidden\' value=\'add\' id=\'submitType\' />" +
+				"<input type=\'hidden\' name=\'lonlat\' id=\'lonlat\'/></li>");
+		$('.line-form-content').append(temp.join(''));
+		generatingColumn(thematicPolylineCategoryMap.keys[0],null);
+		showLeftLine();
+		uploadImage();
+		destroyPolylinePopup();
+	}else{
+		var equipmenttype = 0;
+		temp.push("<li><label><b class=\"requird-logo\"></b>楼层：</label><select class=\'required\' name=\'thematicPolylineEquipment.floorid\' >");
+		temp.push("<option value=\'" + zoneid + "00\' >室外</option>");
+		$.each(floorInfo, function(i, v){
+			temp.push("<option value=\'" + v.floorid + "\'>" + v.name + "</option>");
+		});
+		temp.push("</select>");
+		if(type =='box'){
+			equipmenttype = -1;
+		}
+		temp.push("<input type=\'hidden\' name=\'thematicPolylineEquipment.strokewidth\' value=\'2\'/>" +
+				"<input type=\'hidden\' name=\'thematicPolylineEquipment.strokecolor\' value=\'1E9FFF\'/>" +
+				"<input type=\'hidden\' name=\'thematicPolylineEquipment.fillcolor\' value=\'b6ddfb\'/>" +
+				"<input type=\'hidden\' name=\'thematicPolylineEquipment.equipmenttype\' value=\'" + equipmenttype +"\'/>" +
+				"<input type=\'hidden\' value=\'" + mid + "\' name=\'thematicPolylineEquipment.thematicMapMenu.menuid\'/>" +
+				"<input type=\'hidden\' value=\'" + mid + "\' name=\'mid\'/>" +
+				"<input type=\'hidden\' value=\'add\' id=\'submitType\' />" +
+				"<input type=\'hidden\' name=\'lonlat\' id=\'lonlat\'/></li>");
+		$('.line-form-content').append(temp.join(''));
+		generatingEquipmentColumn(equipmenttype);
+		showLeftLine();
+		uploadImage();
+		destroyPolylinePopup();
+		
+	}
+
+	
 }
 function uploadImage(){
 	$(".upload-btn").upload({
@@ -818,6 +1281,38 @@ function delImg(){
 		}
 	});
 }
+function generatingEquipmentColumn(cid, data){
+	if(categoryColumnDefineMap.contains(cid)){
+		createEquipmentColumn(cid, categoryColumnDefineMap.get(cid),data);
+	}else{
+		showLoadding();
+		$.ajax({
+		    type: "get",
+		    url:'tableClumnDefine_loadEquipmentByCid',
+		    async: true,
+		    data:{'id':cid},
+		    success: function(json) {
+			if(json.status){
+					var columnDefineMap = new HashMap();
+					$.each(json.data, function(i, v){
+						columnDefineMap.put(v.columnName,{
+							'columnName':v.columnName,
+							'columnCnname':v.columnCnname,
+							'columnType':v.columnType,
+							'isRequired':v.isRequired,
+							'isShow':v.isShow
+						});
+					});
+					categoryColumnDefineMap.put(cid,columnDefineMap);
+					createEquipmentColumn(cid,columnDefineMap,data);
+					closeLoadding();
+				}else{
+					outError(json);
+				}
+		    }
+		});
+	}
+}
 function generatingColumn(cid,data){
 	$('#strokecolor').val(thematicPolylineCategoryMap.get(cid).strokecolor);
 	$('#strokewidth').val(thematicPolylineCategoryMap.get(cid).strokewidth);
@@ -826,32 +1321,46 @@ function generatingColumn(cid,data){
 	}else{
 		showLoadding();
 		$.ajax({
-	    type: "get",
-	    url:'tableClumnDefine_loadPolylineByCid',
-	    async: true,
-	    data:{'id':cid},
-	    success: function(json) {
-		if(json.status){
-				var columnDefineMap = new HashMap();
-				$.each(json.data, function(i, v){
-					columnDefineMap.put(v.columnName,{
-						'columnName':v.columnName,
-						'columnCnname':v.columnCnname,
-						'columnType':v.columnType,
-						'isRequired':v.isRequired,
-						'isShow':v.isShow
+		    type: "get",
+		    url:'tableClumnDefine_loadPolylineByCid',
+		    async: true,
+		    data:{'id':cid},
+		    success: function(json) {
+			if(json.status){
+					var columnDefineMap = new HashMap();
+					$.each(json.data, function(i, v){
+						columnDefineMap.put(v.columnName,{
+							'columnName':v.columnName,
+							'columnCnname':v.columnCnname,
+							'columnType':v.columnType,
+							'isRequired':v.isRequired,
+							'isShow':v.isShow
+						});
 					});
-				});
-				categoryColumnDefineMap.put(cid,columnDefineMap);
-				createColumn(cid,columnDefineMap,data);
-				closeLoadding();
-			}else{
-				outError(json);
-			}
-	    }
-	});
-		
+					categoryColumnDefineMap.put(cid,columnDefineMap);
+					createColumn(cid,columnDefineMap,data);
+					closeLoadding();
+				}else{
+					outError(json);
+				}
+		    }
+		});
+			
 	}
+}
+function createEquipmentColumn(cid,columnDefineMap,data){
+	var temp = [];
+	columnDefineMap.each(function(k,v){
+		if(v.isShow == 1){
+			temp.push("<li><label>" + (v.isRequired == 1?'<b class=\"requird-logo\">*</b>':'') + v.columnCnname+ "：</label>");
+			temp.push("<input class=\'" + (v.isRequired == 1?'required':'')+ "\' value=\'" + (data==null?'':data[k]) + "\' type=\'text\' name=\'thematicPolylineEquipment." + k + "\' /></li>");
+		}
+	});
+	var children = $('.line-form-content').children();
+	for(var k = 3; k < children.length; k++){
+		$(children[k]).remove();
+	}
+	$('.line-form-content').append(temp.join(''));
 }
 function createColumn(cid,columnDefineMap,data){
 	var temp = [];
@@ -869,11 +1378,14 @@ function createColumn(cid,columnDefineMap,data){
 }
 function refreshMap(){
 	destroyPolylinePopup();
+	stopEdit();
 	showBasePolyline();
+	showBaseEquipment();
 	showFloorPolyline($('.right-floor-ctns').find('.floor-pic-chosed').attr('floorid'));
 	refreshDrawLayer();
 }
-function savePolyline(){
+
+function save(){
 	var flag = true;
 	$(".required").each(function(index,obj){
 		if ($(obj).val()=="") {
@@ -889,65 +1401,127 @@ function savePolyline(){
 	});
 	if(flag){
 		showLoadding();
-		if($("#submitType").val() == 'add'){
-			for(var i = 0; i< drawLayer.features[0].geometry.components.length; i++){
-				 drawLayer.features[0].geometry.components[i] = drawLayer.features[0].geometry.components[i].transform(map.getProjectionObject(), proj);
-			}
-			$("#lonlat").val(drawLayer.features[0].geometry.toString().replace(/\s+/g,"-"));
-			$.ajax({
-	            type: "POST",
-	            url:'thematicPolyline_add',
-	            data:$('#save-polyline-form').serialize(),
-	            async: true,
-	            error: function(request) {
-					closeLoadding();
-					layer.msg('添加失败',function(){
-	            			refreshMap();
-					});
-					hideLeftLine();
-	            },
-	            success: function(data) {
-	            	closeLoadding();
-	            	hideLeftLine();
-	            	if(data.status){
-	            		layer.msg('添加成功', {icon:1,shade:0.3,time: 2000},function(){
-	            			refreshMap();
+		if(saveType == 'polyline'){
+			if($("#submitType").val() == 'add'){
+				for(var i = 0; i< drawLayer.features[0].geometry.components.length; i++){
+					 drawLayer.features[0].geometry.components[i] = drawLayer.features[0].geometry.components[i].transform(map.getProjectionObject(), proj);
+				}
+				$("#lonlat").val(drawLayer.features[0].geometry.toString().replace(/\s+/g,"-"));
+				$.ajax({
+		            type: "POST",
+		            url:'thematicPolyline_add',
+		            data:$('#save-polyline-form').serialize(),
+		            async: true,
+		            error: function(request) {
+						closeLoadding();
+						layer.msg('添加失败',function(){
+		            			refreshMap();
 						});
-	            	}else{
-						outError(data);
-					}
-	            	
-	            }
-	        });
+						hideLeftLine();
+		            },
+		            success: function(data) {
+		            	closeLoadding();
+		            	hideLeftLine();
+		            	if(data.status){
+		            		layer.msg('添加成功', {icon:1,shade:0.3,time: 2000},function(){
+		            			refreshMap();
+							});
+		            	}else{
+							outError(data);
+						}
+		            	
+		            }
+		        });
+			}else{
+				
+				for(var t = 0; t< drawControls['modify'].layer.features[0].geometry.components.length; t++){
+					 drawControls['modify'].layer.features[0].geometry.components[t] = drawControls['modify'].layer.features[0].geometry.components[t].transform(map.getProjectionObject(), proj);
+				}
+				$("#lonlat").val(drawControls['modify'].layer.features[0].geometry.toString().replace(/\s+/g,"-"));
+				
+				$.ajax({
+		            type: "POST",
+		            url:'thematicPolyline_edit',
+		            data:$('#save-polyline-form').serialize(),
+		            async: true,
+		            error: function(request) {
+						closeLoadding();
+						hideLeftLine();
+		            },
+		            success: function(data) {
+		            	closeLoadding();
+		            	hideLeftLine();
+		            	if(data.status){
+		            		layer.msg('编辑成功', {icon:1,shade:0.3,time: 2000},function(){
+		            			refreshMap();
+							});
+		            	}else{
+							outError(data);
+						}
+		            	
+		            }
+		        });
+			}
 		}else{
-			for(var t = 0; t< drawControls['modify'].layer.features[0].geometry.components.length; t++){
-				 drawControls['modify'].layer.features[0].geometry.components[t] = drawControls['modify'].layer.features[0].geometry.components[t].transform(map.getProjectionObject(), proj);
-			}
-			$("#lonlat").val(drawControls['modify'].layer.features[0].geometry.toString().replace(/\s+/g,"-"));
-			
-			$.ajax({
-	            type: "POST",
-	            url:'thematicPolyline_edit',
-	            data:$('#save-polyline-form').serialize(),
-	            async: true,
-	            error: function(request) {
-					closeLoadding();
-					hideLeftLine();
-	            },
-	            success: function(data) {
-	            	closeLoadding();
-	            	hideLeftLine();
-	            	if(data.status){
-	            		layer.msg('编辑成功', {icon:1,shade:0.3,time: 2000},function(){
-	            			refreshMap();
+			if($("#submitType").val() == 'add'){
+				for(var i = 0; i< drawLayer.features[0].geometry.components.length; i++){
+					 drawLayer.features[0].geometry.components[i] = drawLayer.features[0].geometry.components[i].transform(map.getProjectionObject(), proj);
+				}
+				$("#lonlat").val(drawLayer.features[0].geometry.toString().replace(/\s+/g,"-"));
+				$.ajax({
+		            type: "POST",
+		            url:'thematicPolylineEquipment_add',
+		            data:$('#save-polyline-form').serialize(),
+		            async: true,
+		            error: function(request) {
+						closeLoadding();
+						layer.msg('添加失败',function(){
+		            			refreshMap();
 						});
-	            	}else{
-						outError(data);
-					}
-	            	
-	            }
-	        });
+						hideLeftLine();
+		            },
+		            success: function(data) {
+		            	closeLoadding();
+		            	hideLeftLine();
+		            	if(data.status){
+		            		layer.msg('添加成功', {icon:1,shade:0.3,time: 2000},function(){
+		            			refreshMap();
+							});
+		            	}else{
+							outError(data);
+						}
+		            	
+		            }
+		        });
+			}else{
+				$.ajax({
+		            type: "POST",
+		            url:'thematicPolylineEquipment_edit',
+		            data:$('#save-polyline-form').serialize(),
+		            async: true,
+		            error: function(request) {
+						closeLoadding();
+						layer.msg('编辑失败',function(){
+		            			refreshMap();
+						});
+						hideLeftLine();
+		            },
+		            success: function(data) {
+		            	closeLoadding();
+		            	hideLeftLine();
+		            	if(data.status){
+		            		layer.msg('编辑成功', {icon:1,shade:0.3,time: 2000},function(){
+		            			refreshMap();
+							});
+		            	}else{
+							outError(data);
+						}
+		            	
+		            }
+		        });
+			}
 		}
+		
 	}
 }
 var tipMarkerPopup = null;
@@ -1045,6 +1619,15 @@ $('.input-clear').click(function(e){
 	if(tipMarkerPopup != null){
 		map.removePopup(tipMarkerPopup);
 	}
+});
+
+$('.tuwen input:checkbox').click(function () { 
+	if($(this).prop("checked")){
+		isShowLayer.put($(this).val(), 1);
+	}else{
+		isShowLayer.put($(this).val(), 0);
+	}
+	refreshMap();
 });
 
 

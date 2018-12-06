@@ -57,9 +57,15 @@ public class GisUtils {
 		}
 		return lineString;
 	}
+	
 	public static MultiLineString createMultiLineString(LineString[] lineStrings){
 		MultiLineString multiLineString = geometryFactory.createMultiLineString(lineStrings);
 		return multiLineString;
+	}
+	
+	public static MultiPolygon createMultiPolygon(Polygon[] polygons){
+		MultiPolygon multiPolygon = geometryFactory.createMultiPolygon(polygons);
+		return multiPolygon;
 	}
 	/**
 	 * MULTILINESTRING((0 0, 2 0),(1 1,2 2))
@@ -100,7 +106,7 @@ public class GisUtils {
 		WKTReader reader = new WKTReader(geometryFactory);
 		MultiPolygon multiPolygon = null;
 		try {
-			multiPolygon = (MultiPolygon) reader.read("");
+			multiPolygon = (MultiPolygon) reader.read(multiPolygonWkt);
 		} catch (ParseException e) {
 			e.printStackTrace();
 		}

@@ -69,4 +69,26 @@ public class TableClumnDefineAction extends BaseAction {
 		writeJSON(json.toString());
 		return NONE;
 	}
+	public String loadEquipmentByCid(){
+		StringBuffer json = new StringBuffer();
+		StringBuffer temp = new StringBuffer();
+		List<TableClumnDefine> tableClumnDefines = this.tableClumnDefineService.loadEquipmentColumn(getId());
+		for (TableClumnDefine tableClumnDefine : tableClumnDefines) {
+			temp.append("{")
+				.append("\"columnName\":\"" + tableClumnDefine.getId().getColumnName() + "\",")
+				.append("\"columnCnname\":\" " + tableClumnDefine.getColumnCnname() + "\",")
+				.append("\"columnType\":\"" + tableClumnDefine.getColumnType() + "\",")
+				.append("\"isRequired\":\"" + tableClumnDefine.getIsRequired() + "\",")
+				.append("\"isShow\":\"" + tableClumnDefine.getIsShow() + "\"")
+				.append("},");
+		}
+		json.append("{")
+			.append("\"status\":true,")
+			.append("\"data\":[")
+			.append(StringUtil.deleteLastStr(temp.toString()))
+			.append("]")
+			.append("}");
+		writeJSON(json.toString());
+		return NONE;
+	}
 }

@@ -59,8 +59,12 @@ String domain = request.getRemoteAddr();
 						<p class="tulie posit-RE f18"><img src="<%=path%>/zhuantitu/images/tuli.png" alt="">图例</p>
 							<ul class="tushi">
 								<s:iterator value="thematicPolylineCategories" var="c">
-									<li class="tuwen"><div class="line-box" style="background: #${c.strokecolor}"></div>${c.name}</li>
+									<li class="tuwen">
+									<div class="line-box" style="background: #${c.strokecolor}"></div>${c.name} <input type="checkbox" value="${c.categoryid}" checked="checked" ></li>
+			
 								</s:iterator>
+								<li class="tuwen"><img src="<%=path%>/zhuantitu/images/box.png" alt="">链路设备 <input type="checkbox" value="-1" checked="checked" ></li>
+								<li class="tuwen"><img src="<%=path%>/zhuantitu/images/circle.png" alt="">管井盖 <input type="checkbox" value="0" checked="checked" ></li>
 							</ul>
 						<div class="triangle-right posit-AB"></div>
 					</li>
@@ -91,7 +95,7 @@ String domain = request.getRemoteAddr();
 						<div class="delet-line float-R"></div>
 					</div>
 					<div class="save-line-box">
-						<div class="save-line-btn float-R" onclick="savePolyline()">保存</div>
+						<div class="save-line-btn float-R" onclick="save()">保存</div>
 					</div>
 					<ul class="line-form-content">
 					</ul>
@@ -141,6 +145,8 @@ String domain = request.getRemoteAddr();
 					</div>
 				</div>
 			</div>
+			<div class="add float-L shadow f12 posit-RE add-new-circle"><img src="<%=path%>/zhuantitu/images/add-circle.png" alt="">新增井盖</div>
+			<div class="add float-L shadow f12 posit-RE add-new-box"><img src="<%=path%>/zhuantitu/images/add-box.png" alt="">新增设备</div>
 			<script>
 				var mid = ${mid};
 				$(".add-close").click(function(event){
