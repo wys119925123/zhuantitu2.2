@@ -20,7 +20,7 @@ a{color:#006ad0;text-decoration:none;}
 	function testTime() {
 		if(t<0) return;
 		if(t == 0){
-		    location.href = 'https://cas.ctbu.edu.cn/lyuapServer/login?service=http://gis.ctbu.edu.cn/zhuantitu2.2/login_index';
+		    location.href = 'http://dm.haut.edu.cn/dmm_cas/logout?service=http://gis.haut.edu.cn/zhuantitu/login_index';
 		}
 		document.getElementById("view").innerHTML = "<b>"+t+"</b>";
 		t--; 
@@ -43,7 +43,7 @@ a{color:#006ad0;text-decoration:none;}
 				<span style="color:red;font-weight:bold;font-size: 16px">没有系统权限，请联系管理员分配权限<br/></span>,3秒后将自动跳转单点登录
 				<div id='view' style="color:red;"><b>3</b></div>
 				<div id="j">
-					<a href="javascript:void(0);" onclick="javascript:location.href='https://cas.ctbu.edu.cn/lyuapServer/login?service=http://gis.ctbu.edu.cn/zhuantitu2.2/login_index';return false;"><span>如果没有跳转，请点击此处</span></a>
+					<a href="javascript:void(0);" onclick="javascript:location.href='http://dm.haut.edu.cn/dmm_cas/logout?service=http://gis.haut.edu.cn/zhuantitu/login_index';return false;"><span>如果没有跳转，请点击此处</span></a>
 				</div>
 			</center>
 		</td>

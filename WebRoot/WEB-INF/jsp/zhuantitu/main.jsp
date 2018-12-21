@@ -142,7 +142,7 @@ String path = request.getContextPath();
 	$(function(){
 		$('.logout').click(function(){
 			layer.confirm('确定要退出吗?', {icon: 3, title:'提示'}, function(index){
-			 	location.href = "login_logout";
+			 	location.href = "http://dm.haut.edu.cn/dmm_cas/logout?service=http://gis.haut.edu.cn/zhuantitu/login_index";
 			});
 		});
 		$('.forward').click(function(){

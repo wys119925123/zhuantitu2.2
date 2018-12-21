@@ -18,8 +18,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
-import org.apache.struts2.ServletActionContext;
-import org.ly.uap.client.authentication.AttributePrincipal;
+import org.jasig.cas.client.authentication.AttributePrincipal;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Controller;
 
@@ -114,15 +113,18 @@ public class LoginAction extends BaseAction {
                 }
             }
         }
-        HttpServletRequest request = ServletActionContext.getRequest();
-        String uid = request.getRemoteUser();
-        AttributePrincipal principal = (AttributePrincipal)request.getUserPrincipal();
-        String pusername = null;
-        if(principal!=null){
-            pusername = principal.getName();
-        }
+		HttpServletRequest request = getRequest();
+		String uid = request.getRemoteUser();
+		AttributePrincipal principal = (AttributePrincipal)request.getUserPrincipal();
+		String pusername = null;
+		if(principal != null){
+			pusername = principal.getName();
+		}
         try {
-            if (userMenuPermissionService.hasPermission(username)){
+			System.out.println("uid:"+uid);
+			System.out.println("pusername:"+pusername);
+            if (userMenuPermissionService.hasPermission(uid)){
+				System.out.println("1111111");
                 if (remember) {
                     addCookie("zhuantiturememberUserInfo", DESHelper.encryptDES("{\"username\":\"" + uid + "\"," + "\"password\":\"" + password + "\"}", encryptKey), 60 * 60 * 24 * 7);
                 } else {
@@ -132,8 +134,15 @@ public class LoginAction extends BaseAction {
                 if (thematicUserMap != null && thematicUserMap.get("avatar") == null) {
                     thematicUserMap.put("avatar", "zhuantitu/images/touxiang.png");
                 }
+				System.out.println("2222222");
                 initUserPermission(uid);
+				User user = new User();
+				user.setUserid(uid);
+				user.setName(thematicUserMap.get("name")!=null?(String)thematicUserMap.get("name"):null);
+				user.setRolename(thematicUserMap.get("deptname")!=null?(String)thematicUserMap.get("deptname"):null);
+				user.setAvatar((String)thematicUserMap.get("avatar"));
                 getSession().setAttribute("loginUser", thematicUserMap);
+				System.out.println("3333333");
             } else {
                 return "noPermission";
             }
