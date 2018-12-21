@@ -121,10 +121,7 @@ public class LoginAction extends BaseAction {
 			pusername = principal.getName();
 		}
         try {
-			System.out.println("uid:"+uid);
-			System.out.println("pusername:"+pusername);
             if (userMenuPermissionService.hasPermission(uid)){
-				System.out.println("1111111");
                 if (remember) {
                     addCookie("zhuantiturememberUserInfo", DESHelper.encryptDES("{\"username\":\"" + uid + "\"," + "\"password\":\"" + password + "\"}", encryptKey), 60 * 60 * 24 * 7);
                 } else {
@@ -134,7 +131,6 @@ public class LoginAction extends BaseAction {
                 if (thematicUserMap != null && thematicUserMap.get("avatar") == null) {
                     thematicUserMap.put("avatar", "zhuantitu/images/touxiang.png");
                 }
-				System.out.println("2222222");
                 initUserPermission(uid);
 				User user = new User();
 				user.setUserid(uid);
@@ -142,7 +138,6 @@ public class LoginAction extends BaseAction {
 				user.setRolename(thematicUserMap.get("deptname")!=null?(String)thematicUserMap.get("deptname"):null);
 				user.setAvatar((String)thematicUserMap.get("avatar"));
                 getSession().setAttribute("loginUser", thematicUserMap);
-				System.out.println("3333333");
             } else {
                 return "noPermission";
             }
